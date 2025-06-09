@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Sửa sân bóng</title>
+  <link rel="stylesheet" href="style2.css" />
+  <style>
+    body {
+      margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background: url('san bong.jpg') no-repeat center center fixed;
+            background-size: cover;
+    }
+    .container {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      max-width: 500px;
+      margin: 100px auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+    }
+    h2 {
+      text-align: center;
+      color: #e91e63;
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-top: 10px;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+    .coords {
+      display: flex;
+      gap: 10px;
+    }
+    .coords input {
+      flex: 1;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px;
+      background-color: #e91e63;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .btn-back {
+  display: inline-block;
+  margin-top: 15px;
+  background-color: #cccccc;
+  color: #333;
+  text-decoration: none;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-weight: bold;
+  transition: background-color 0.3s ease;
+  text-align: center;
+}
+
+.btn-back:hover {
+  background-color: #b0b0b0;
+}
+
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🛠️ Sửa sân bóng</h2>
+    <label for="sanSelect">Chọn sân bóng:</label>
+    <select id="sanSelect">
+      <option value="">-- Chọn --</option>
+    </select>
+
+    <label for="trangThai">Trạng thái sân:</label>
+    <input type="text" id="trangThai" placeholder="Nhập trạng thái (ví dụ: Còn trống, Đã full, Bảo trì...)">
+
+    <label for="tenSan">Tên sân:</label>
+    <input type="text" id="tenSan">
+
+    <label for="diaChi">Địa chỉ:</label>
+    <input type="text" id="diaChi">
+
+    <label for="hotline">Hotline:</label>
+    <input type="text" id="hotline">
+
+    <label for="giaThue">Giá thuê:</label>
+    <input type="text" id="giaThue">
+
+    <label>Tọa độ:</label>
+    <div class="coords">
+      <input type="text" id="latitude" placeholder="Latitude">
+      <input type="text" id="longitude" placeholder="Longitude">
+    </div>
+
+    <button onclick="capNhatSan()">Cập nhật sân</button>
+    <button onclick="xoaSan()">🗑️ Xoá sân</button>
+    <a href="home.html" class="btn-back">⬅️ Quay lại trang chủ</a>
+  </div>
+
+  <script>
+    async function loadDanhSachSan() {
+      try {
+        const res = await fetch('/api/sanbong');
+        const data = await res.json();
+        const select = document.getElementById('sanSelect');
+        select.innerHTML = '<option value="">-- Chọn --</option>';
+  
+        data.forEach(san => {
+          const option = document.createElement('option');
+          option.value = san.id;
+          option.textContent = san.ten_san;
+          select.appendChild(option);
+        });
+      } catch (err) {
+        console.error("❌ Lỗi khi load danh sách sân:", err);
+        alert("Không thể tải danh sách sân!");
+      }
+    }
+  
+    document.getElementById('sanSelect').addEventListener('change', async function () {
+      const id = this.value;
+      if (!id) return;
+  
+      try {
+        const res = await fetch(`/api/sanbong/${id}`);
+        const san = await res.json();
+  
+        document.getElementById('tenSan').value = san.ten_san || '';
+        document.getElementById('diaChi').value = san.dia_chi || '';
+        document.getElementById('hotline').value = san.hotline || '';
+        document.getElementById('giaThue').value = san.gia_thue_s || '';
+        document.getElementById('latitude').value = san.latitude || '';
+        document.getElementById('longitude').value = san.longitude || '';
+      } catch (err) {
+        console.error("❌ Lỗi khi tải chi tiết sân:", err);
+        alert("Không thể tải thông tin sân!");
+      }
+    });
+  
+    async function capNhatSan() {
+  const id = document.getElementById('sanSelect').value;
+  if (!id) {
+    alert("Vui lòng chọn sân cần cập nhật.");
+    return;
+  }
+
+  const latitudeStr = document.getElementById('latitude').value.trim().replace(',', '.');
+  const longitudeStr = document.getElementById('longitude').value.trim().replace(',', '.');
+
+  const latitude = parseFloat(latitudeStr);
+  const longitude = parseFloat(longitudeStr);
+
+  if (
+    isNaN(latitude) || isNaN(longitude) ||
+    latitude < -90 || latitude > 90 ||
+    longitude < -180 || longitude > 180
+  ) {
+    alert("⚠️ Tọa độ không hợp lệ! Latitude phải trong [-90, 90], Longitude phải trong [-180, 180].");
+    return;
+  }
+
+  const body = {
+    ten_san: document.getElementById('tenSan').value,
+    dia_chi: document.getElementById('diaChi').value,
+    hotline: document.getElementById('hotline').value,
+    gia_thue_s: document.getElementById('giaThue').value,
+    latitude: latitude,
+    longitude: longitude,
+    trang_thai: document.getElementById('trangThai').value
+  };
+
+  try {
+    const res = await fetch(`/api/sanbong/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (res.ok) {
+      alert("✅ Cập nhật thành công!");
+    } else {
+      alert("❌ Cập nhật thất bại!");
+    }
+  } catch (err) {
+    console.error("❌ Lỗi gửi cập nhật:", err);
+    alert("Không thể gửi cập nhật!");
+  }
+}
+  
+    async function xoaSan() {
+      const id = document.getElementById('sanSelect').value;
+      if (!id) {
+        alert("Vui lòng chọn sân cần xoá.");
+        return;
+      }
+  
+      const confirmDelete = confirm("⚠️ Bạn có chắc chắn muốn xoá sân này?");
+      if (!confirmDelete) return;
+  
+      try {
+        const res = await fetch(`/api/sanbong/${id}`, {
+          method: 'DELETE'
+        });
+  
+        if (res.ok) {
+          alert("🗑️ Đã xoá sân thành công!");
+          loadDanhSachSan(); // Reload danh sách thay vì location.reload()
+          // Clear form
+          document.getElementById('tenSan').value = '';
+          document.getElementById('diaChi').value = '';
+          document.getElementById('hotline').value = '';
+          document.getElementById('giaThue').value = '';
+          document.getElementById('latitude').value = '';
+          document.getElementById('longitude').value = '';
+        } else {
+          alert("❌ Xoá sân thất bại!");
+        }
+      } catch (err) {
+        console.error("❌ Lỗi khi xoá sân:", err);
+        alert("Không thể xoá sân!");
+      }
+    }
+  
+    window.addEventListener('DOMContentLoaded', loadDanhSachSan);
+  </script>
+  
+  
+</body>
+</html>

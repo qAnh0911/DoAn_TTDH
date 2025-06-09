@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Trang chủ - Sân bóng</title>
+  <link rel="stylesheet" href="style2.css">
+  <style>
+    /* Ẩn mặc định các nút chỉ dành cho admin hoặc owner */
+    .admin-only,
+    .admin-or-owner-only {
+      display: none;
+    }
+  </style>
+</head>
+<body class="home-background">
+  <div class="home-container">
+    <h1>🎉 Chào mừng đến với hệ thống Quản Lý sân bóng</h1>
+    <h2>Xin chào, <span id="username"></span>!</h2>
+
+    <div class="button-group">
+      <a href="tracuu.html" class="feature-btn">🔍 Tra cứu sân bóng</a>
+      <a href="themsan.html" class="feature-btn admin-or-owner-only">➕ Thêm sân mới</a>
+      <a href="suasan.html?id=1" class="feature-btn admin-or-owner-only">✏️ Sửa sân</a>
+      <a href="phanquyen.html" class="feature-btn admin-only">🛡️ Phân quyền</a>
+      <button onclick="logout()" class="feature-btn">🚪 Đăng xuất</button>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res = await fetch('/api/me');
+
+    if (!res.ok) {
+      document.getElementById('username').textContent = 'Khách';
+      return;
+    }
+
+    const { user } = await res.json();
+    document.getElementById('username').textContent = user.username;
+
+    if (user.is_admin || user.is_owner) {
+      document.querySelectorAll('.admin-or-owner-only').forEach(el => el.style.display = 'inline-block');
+    }
+
+    if (user.is_admin) {
+      document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'inline-block');
+    }
+
+  } catch (err) {
+    console.error("❌ Lỗi khi kiểm tra phiên đăng nhập:", err);
+    document.getElementById('username').textContent = 'Khách';
+  }
+});
+
+function logout() {
+  fetch('/api/logout').then(() => {
+    window.location.href = 'index.html';
+  });
+}
+
+  </script>
+
+  <script src="map.js"></script>
+</body>
+</html>
